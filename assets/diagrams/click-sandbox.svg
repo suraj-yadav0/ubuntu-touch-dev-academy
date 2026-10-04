@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 440" width="100%" height="100%">
+  <defs>
+    <style>
+      .box { rx: 8; stroke-width: 2; }
+      .title { font-family: system-ui, -apple-system, sans-serif; font-size: 15px; font-weight: 700; fill: #ffffff; }
+      .desc { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; fill: #d1d5db; }
+      .tag { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #10b981; font-weight: 600; }
+      .block-arrow { stroke: #ef4444; stroke-width: 2.5; stroke-dasharray: 4,4; }
+      .allow-arrow { stroke: #10b981; stroke-width: 2.5; marker-end: url(#arrow-green); fill: none; }
+    </style>
+    <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#10b981" />
+    </marker>
+  </defs>
+
+  <rect width="860" height="440" fill="#181a1f" rx="12"/>
+
+  <!-- App Sandbox boundary -->
+  <rect x="30" y="30" width="380" height="380" rx="10" fill="#1f242d" stroke="#e95420" stroke-width="2.5" stroke-dasharray="6,4"/>
+  <text x="50" y="60" class="title" fill="#e95420">Confined App Container (Click Sandbox)</text>
+  <text x="50" y="80" class="desc">Package: myapp.developer_0.1.0_arm64</text>
+
+  <!-- Inside App container -->
+  <rect x="50" y="100" width="340" height="80" class="box" fill="#2d3340" stroke="#4b5563"/>
+  <text x="65" y="125" class="title">QML / C++ Runtime Process</text>
+  <text x="65" y="145" class="desc">App PID assigned to custom CGroups slice</text>
+  <text x="65" y="165" class="desc">AppArmor profile: myapp.developer_myapp</text>
+
+  <!-- Isolated Storage -->
+  <rect x="50" y="200" width="340" height="85" class="box" fill="#243447" stroke="#3b82f6"/>
+  <text x="65" y="225" class="title">Isolated App Data Directories</text>
+  <text x="65" y="245" class="desc">~/.local/share/myapp.developer (Read/Write)</text>
+  <text x="65" y="265" class="desc">~/.config/myapp.developer (Read/Write)</text>
+
+  <!-- Sandbox Policies -->
+  <rect x="50" y="305" width="340" height="85" class="box" fill="#2d2438" stroke="#a855f7"/>
+  <text x="65" y="330" class="title">Policy Groups in apparmor.json</text>
+  <text x="65" y="350" class="desc">"networking", "audio", "camera", "location"</text>
+  <text x="65" y="370" class="tag">Seccomp syscall filter restricts root/raw sockets</text>
+
+  <!-- Inter-App Broker (Content Hub) -->
+  <rect x="460" y="30" width="370" height="180" rx="10" fill="#1e2c24" stroke="#10b981" stroke-width="2"/>
+  <text x="480" y="60" class="title" fill="#34d399">Content Hub Service (D-Bus Broker)</text>
+  <text x="480" y="80" class="desc">Secure mediator for file transfers between apps</text>
+
+  <rect x="480" y="100" width="330" height="90" class="box" fill="#283d32" stroke="#10b981"/>
+  <text x="495" y="125" class="title">User Explicit Intent Mediation</text>
+  <text x="495" y="145" class="desc">Peer picker UI shown by Lomiri system compositor.</text>
+  <text x="495" y="165" class="desc">Transfers files via temporary shared file descriptors.</text>
+
+  <!-- Restricted System Core -->
+  <rect x="460" y="230" width="370" height="180" rx="10" fill="#2d1d1f" stroke="#ef4444" stroke-width="2"/>
+  <text x="480" y="260" class="title" fill="#f87171">Forbidden System Surfaces (Blocked by MAC)</text>
+  <text x="480" y="280" class="desc">Blocked by Linux AppArmor Kernel Module</text>
+
+  <rect x="480" y="295" width="330" height="95" class="box" fill="#3b2024" stroke="#ef4444"/>
+  <text x="495" y="320" class="title">Denied Direct Access</text>
+  <text x="495" y="340" class="desc">Other apps' private data (~/.local/share/*)</text>
+  <text x="495" y="360" class="desc">Direct /dev/nodes (GPS, RIL modem, mic directly)</text>
+  <text x="495" y="378" class="desc">Immutable Read-Only root filesystem (/)</text>
+
+  <!-- Connecting arrow -->
+  <path d="M 390 140 L 470 140" class="allow-arrow"/>
+</svg>
