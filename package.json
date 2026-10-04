@@ -1,0 +1,22 @@
+{
+  "name": "ubuntu-touch-dev-academy",
+  "version": "1.0.0",
+  "description": "Comprehensive Ubuntu Touch development course, architecture handbook, and student lab materials.",
+  "scripts": {
+    "start": "npx -y serve . -l 3000",
+    "serve": "npx -y serve . -l 3000",
+    "python": "python3 -m http.server 3000"
+  },
+  "keywords": [
+    "ubuntu-touch",
+    "ubports",
+    "lomiri",
+    "clickable",
+    "libhybris",
+    "halium",
+    "qml",
+    "linux-mobile"
+  ],
+  "author": "Ubuntu Touch Academy",
+  "license": "MIT"
+}
