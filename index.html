@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete Ubuntu Touch Development Course, Underlying Architecture, History, and Instructor Handbook">
+  <meta name="color-scheme" content="light dark">
+  <title>Ubuntu Touch Developer Academy</title>
+
+  <!-- Prevent Flash of Unstyled Content (FOUC) for dark mode as per modern-web-guidance -->
+  <script>
+    {
+      const savedTheme = localStorage.getItem('theme-preference');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+  <!-- Reading Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar-fill" id="progress-bar"></div>
+  </div>
+
+  <!-- Main Top Header -->
+  <header class="top-header">
+    <div class="brand-section">
+      <button class="btn btn-secondary" id="mobile-menu-btn" aria-label="Toggle menu" style="display: none; padding: 0.35rem 0.6rem;">Menu</button>
+      <span class="brand-badge">UBports</span>
+      <span class="brand-title">Ubuntu Touch Developer Academy</span>
+    </div>
+
+    <div class="header-controls">
+      <div class="search-input-wrapper">
+        <span class="search-icon-placeholder" aria-hidden="true">/</span>
+        <input type="text" id="global-search-input" class="search-input" placeholder="Search course (Ctrl+K)..." autocomplete="off" />
+      </div>
+      <button class="btn btn-secondary" id="theme-toggle-btn" aria-label="Toggle theme">Theme</button>
+      <button class="btn btn-primary" id="print-lecture-btn" title="Print lecture handouts or save as PDF">Print Notes</button>
+    </div>
+  </header>
+
+  <!-- Application Shell Layout -->
+  <div class="app-layout">
+    
+    <!-- Left Sidebar: Course Curriculum Navigation -->
+    <nav class="sidebar" id="app-sidebar" aria-label="Course Curriculum Navigation">
+      <div class="sidebar-title">Modules &amp; Syllabus</div>
+      <ul class="nav-module-list" id="nav-module-list">
+        <!-- Dynamically populated by app.js from CURRICULUM -->
+      </ul>
+    </nav>
+
+    <!-- Main Content Reader -->
+    <main class="main-content" id="main-content-area" tabindex="-1">
+      <!-- Dynamically populated by app.js based on selected module -->
+    </main>
+
+    <!-- Right Sidebar: In-Page Table of Contents -->
+    <aside class="toc-panel" id="toc-panel" aria-label="Page Table of Contents">
+      <div class="toc-title">On This Page</div>
+      <ul class="toc-list" id="toc-list">
+        <!-- Dynamically populated by app.js based on active section -->
+      </ul>
+    </aside>
+
+  </div>
+
+  <!-- Search Modal Overlay -->
+  <div class="search-modal" id="search-modal" role="dialog" aria-modal="true" aria-label="Search Curriculum">
+    <div class="search-box-container">
+      <div class="search-modal-header">
+        <input type="text" id="modal-search-input" class="search-modal-input" placeholder="Search architecture, clickable, QML, Halium, libhybris..." />
+      </div>
+      <ul class="search-results-list" id="search-results">
+        <!-- Dynamic search results populated by app.js -->
+      </ul>
+    </div>
+  </div>
+
+  <!-- Curriculum Data and Application Scripts -->
+  <script src="js/curriculum-data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
