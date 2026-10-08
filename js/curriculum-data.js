@@ -2327,6 +2327,110 @@ This course provides a comprehensive hands-on introduction to mobile operating s
       ],
       correctAnswer: 2,
       explanation: "Grid Units (units.gu) automatically scale layout dimensions across varying screen densities and form factors, ensuring consistent physical size on all screens."
+    },
+    {
+      id: "q7",
+      moduleId: "module-5-app-dev",
+      question: "According to the Lomiri Human Interface Guidelines (HIG), why should applications never place swipeable navigation drawers on the left display boundary?",
+      options: [
+        "Because Qt does not support touch swiping on the left",
+        "Because the left screen edge is reserved by the Lomiri shell for the system application launcher dock",
+        "Because it drains extra GPU power",
+        "Because AppArmor blocks left edge touch events"
+      ],
+      correctAnswer: 1,
+      explanation: "Lomiri reserves all outer screen edges for shell gestures. The left edge triggers the system launcher, so placing an app swipe gesture there results in conflicting gestures and poor UX."
+    },
+    {
+      id: "q8",
+      moduleId: "module-realworld-patterns",
+      question: "How does URL Dispatcher enable inter-app deep linking and system intents on Ubuntu Touch?",
+      options: [
+        "By allowing direct raw memory sharing between sandboxed processes",
+        "By routing registered custom URI schemes through a central system broker without granting direct IPC permissions",
+        "By bypassing AppArmor confinement entirely",
+        "By launching an isolated Android container"
+      ],
+      correctAnswer: 1,
+      explanation: "URL Dispatcher acts as a trusted system-level URI router. Apps register schemes (like matrix: or tel:) in manifest hooks, and the dispatcher opens the destination app safely."
+    },
+    {
+      id: "q9",
+      moduleId: "module-realworld-patterns",
+      question: "Why does Ubuntu Touch use a single multiplexed daemon (ubuntu-push-client) rather than letting each app run background sockets?",
+      options: [
+        "Because Linux kernels cannot handle more than 5 open sockets",
+        "To prevent background battery drain by keeping the cellular radio and SoC asleep while maintaining a single HTTP/2 connection",
+        "Because Click packages are not allowed to access Wi-Fi",
+        "To enforce Google Play Services compliance"
+      ],
+      correctAnswer: 1,
+      explanation: "Allowing every app to run background sockets causes continuous CPU wakeups and rapid battery discharge. A single system push client maintains one connection while apps stay frozen in cgroups."
+    },
+    {
+      id: "q10",
+      moduleId: "module-6-labs",
+      question: "Which Clickable command validates Click package manifest syntax, AppArmor profiles, and desktop files before OpenStore submission?",
+      options: [
+        "clickable clean",
+        "clickable review",
+        "clickable sim",
+        "clickable rootfs"
+      ],
+      correctAnswer: 1,
+      explanation: "The 'clickable review' command executes the Click app review validator, verifying AppArmor security rules, icon resolutions, and manifest fields against OpenStore policies."
+    },
+    {
+      id: "q11",
+      moduleId: "module-7-porting",
+      question: "Which Halium tool is used during device porting to audit kernel defconfig files for required Linux mobile options?",
+      options: [
+        "fastboot oem check",
+        "check-kernel-config",
+        "dmesg-analyzer",
+        "adb bugreport"
+      ],
+      correctAnswer: 1,
+      explanation: "The Halium check-kernel-config script checks kernel defconfig files for essential features like AppArmor, namespaces, binderfs, and cgroups, reporting missing flags with the -w auto-fix flag."
+    },
+    {
+      id: "q12",
+      moduleId: "module-challenges-roadmap",
+      question: "Why has Voice-over-LTE (VoLTE) been historically difficult to implement on community mobile Linux distributions?",
+      options: [
+        "Because 4G LTE networks do not support digital voice encoding",
+        "Because major chipset vendors implement the IMS stack inside proprietary, closed-source Android radio daemons with custom AT extensions",
+        "Because Linux lacks SIP audio codecs",
+        "Because Wayland cannot display dialer keypads"
+      ],
+      correctAnswer: 1,
+      explanation: "VoLTE requires an IP Multimedia Subsystem (IMS) stack. SoC vendors like Qualcomm and MediaTek implement IMS in proprietary binary daemons rather than standard Linux drivers, requiring custom ofono-ims reverse-engineering."
+    },
+    {
+      id: "q13",
+      moduleId: "module-challenges-roadmap",
+      question: "Which modern audio subsystem is being integrated into Ubuntu Touch to replace PulseAudio-droid and enable Bluetooth LE Audio?",
+      options: [
+        "JACK Audio Server",
+        "DirectSound",
+        "PipeWire",
+        "OpenAL"
+      ],
+      correctAnswer: 2,
+      explanation: "PipeWire is replacing legacy PulseAudio-droid modules, providing low-latency routing, native Bluetooth Low Energy Audio (LC3 codec), and improved stream isolation."
+    },
+    {
+      id: "q14",
+      moduleId: "module-ecosystem-resources",
+      question: "Where is the comprehensive official database of Ubuntu Touch supported devices, porting progress, and release channels hosted?",
+      options: [
+        "android-devices.com",
+        "devices.ubuntu-touch.io",
+        "openstore.devices.net",
+        "kernel.org/ports"
+      ],
+      correctAnswer: 1,
+      explanation: "devices.ubuntu-touch.io is the official UBports portal listing all ported smartphones and tablets, their functional features (camera, GPS, sound, cellular), and installation instructions."
     }
   ]
 };
