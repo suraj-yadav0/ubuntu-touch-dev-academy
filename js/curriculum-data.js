@@ -833,8 +833,604 @@ Convergent software must gracefully handle both finger touch and mouse pointer i
       ]
     },
     {
-      id: "module-6-labs",
+      id: "module-realworld-patterns",
       number: "06",
+      title: "Real-World Application Architectures & Production Code",
+      summary: "Production-ready patterns: C++ backend plugins, GPS location tracking, Content Hub file brokering, URL Dispatcher deep links, push notifications, and SQLite persistence.",
+      readTime: "40 min read",
+      topics: [
+        {
+          id: "cpp-qml-integration",
+          title: "High-Performance C++ Backend with QML Frontend (Clickable C++ Plugin)",
+          content: `
+### Why Combine C++ and QML?
+
+While QML and JavaScript excel at declarative UI layout and fluid animations, heavy computational tasks, native POSIX sockets, hardware cryptography, and large data structures will cause frame drops if executed on the QML JavaScript engine.
+
+In production Ubuntu Touch apps, the recommended architecture is:
+1. **QML**: Declarative user interface, user input handling, and transitions.
+2. **C++ (Qt Quick Plugin / QObject)**: Business logic, background threads, file I/O, networking, and high-performance algorithms.
+
+### 1. CMake & Clickable Configuration
+
+In your project root, configure \`clickable.yaml\` to build both C++ binaries and QML assets:
+
+\`\`\`yaml
+format: 1
+build: cmake
+builder: docker
+scripts:
+  build:
+    - cmake -B build -S . -DCMAKE_INSTALL_PREFIX=/
+    - cmake --build build --target install -- DESTDIR=install
+kill: dev.academy.cppapp
+\`\`\`
+
+Your \`CMakeLists.txt\` registers the C++ extension as a QML plugin or compiles it into the executable:
+
+\`\`\`cmake
+cmake_minimum_required(VERSION 3.16)
+project(dev_academy_cppapp LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+find_package(Qt5 REQUIRED COMPONENTS Core Quick Gui Network)
+
+add_executable(dev_academy_cppapp
+    src/main.cpp
+    src/devicemonitor.cpp
+    src/devicemonitor.h
+)
+
+target_link_libraries(dev_academy_cppapp
+    PRIVATE
+        Qt5::Core
+        Qt5::Quick
+        Qt5::Gui
+        Qt5::Network
+)
+
+install(TARGETS dev_academy_cppapp RUNTIME DESTINATION bin)
+install(DIRECTORY qml/ DESTINATION qml)
+install(FILES dev.academy.cppapp.desktop DESTINATION .)
+install(FILES dev.academy.cppapp.apparmor DESTINATION .)
+install(FILES manifest.json DESTINATION .)
+\`\`\`
+
+### 2. The Production C++ Backend: DeviceMonitor
+
+Create \`src/devicemonitor.h\` exposing reactive properties and invokable methods:
+
+\`\`\`cpp
+#pragma once
+
+#include <QObject>
+#include <QString>
+#include <QThread>
+
+class DeviceMonitor : public QObject {
+    Q_OBJECT
+    Q_PROPERTY(double cpuTemperature READ cpuTemperature NOTIFY temperatureChanged)
+    Q_PROPERTY(bool isScanning READ isScanning NOTIFY scanningChanged)
+
+public:
+    explicit DeviceMonitor(QObject *parent = nullptr);
+
+    double cpuTemperature() const { return m_cpuTemperature; }
+    bool isScanning() const { return m_isScanning; }
+
+    Q_INVOKABLE void startDiagnosticScan();
+    Q_INVOKABLE void exportReport(const QString &targetPath);
+
+signals:
+    void temperatureChanged(double newTemp);
+    void scanningChanged(bool scanning);
+    void scanCompleted(const QString &summary);
+    void scanFailed(const QString &errorMessage);
+
+private:
+    double m_cpuTemperature{38.5};
+    bool m_isScanning{false};
+};
+\`\`\`
+
+In \`src/main.cpp\`, register the C++ class with the QML type system:
+
+\`\`\`cpp
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QQmlContext>
+#include <qquickview.h>
+#include "devicemonitor.h"
+
+int main(int argc, char *argv[]) {
+    QGuiApplication app(argc, argv);
+
+    // Register C++ class to QML namespace
+    qmlRegisterType<DeviceMonitor>("Academy.Backend", 1, 0, "DeviceMonitor");
+
+    QQmlApplicationEngine engine;
+    engine.load(QUrl(QStringLiteral("qrc:/qml/Main.qml")));
+
+    if (engine.rootObjects().isEmpty()) {
+        return -1;
+    }
+
+    return app.exec();
+}
+\`\`\`
+
+### 3. Consuming C++ in Lomiri QML
+
+\`\`\`qml
+import QtQuick 2.15
+import Lomiri.Components 1.3
+import Academy.Backend 1.0
+
+MainView {
+    id: root
+    width: units.gu(50)
+    height: units.gu(80)
+
+    DeviceMonitor {
+        id: monitor
+        onScanCompleted: (summary) => {
+            statusLabel.text = summary
+        }
+        onScanFailed: (err) => {
+            statusLabel.text = "Error: " + err
+        }
+    }
+
+    Page {
+        title: "Hardware Diagnostics"
+
+        Column {
+            anchors.centerIn: parent
+            spacing: units.gu(2)
+            width: parent.width - units.gu(4)
+
+            Label {
+                text: "CPU Temp: " + monitor.cpuTemperature.toFixed(1) + " °C"
+                textSize: Label.Large
+                font.bold: true
+            }
+
+            Button {
+                text: monitor.isScanning ? "Scanning..." : "Run Diagnostics"
+                enabled: !monitor.isScanning
+                color: Theme.palette.normal.activity
+                onClicked: monitor.startDiagnosticScan()
+            }
+
+            Label {
+                id: statusLabel
+                text: "Ready"
+                wrapMode: Text.Wrap
+            }
+        }
+    }
+}
+\`\`\`
+`
+        },
+        {
+          id: "sensors-location",
+          title: "Hardware Sensors & GPS Location Integration via QtPositioning",
+          content: `
+### Geolocation Architecture on Ubuntu Touch
+
+Access to GPS and hardware sensors on Ubuntu Touch is strictly regulated:
+1. **AppArmor Confinement**: The application must request the \`location\` policy group in \`apparmor.json\`.
+2. **System Location Broker**: Ubuntu Touch runs \`location-service\` which multiplexes GPS hardware, cellular cell tower triangulation, and Wi-Fi SSID geolocation.
+3. **User Permission Prompt**: When an application first initiates GPS queries, the operating system prompts the user to grant or deny access.
+
+### 1. AppArmor Policy Group Declaration
+
+In your project's \`apparmor.json\`:
+
+\`\`\`json
+{
+  "policy_groups": [
+    "networking",
+    "location"
+  ],
+  "policy_version": 20.04
+}
+\`\`\`
+
+### 2. Power-Conscious QML Implementation
+
+Smartphones drain battery quickly if GPS hardware remains powered on continuously. Production code must set **update intervals** and **distance filters**:
+
+\`\`\`qml
+import QtQuick 2.15
+import QtPositioning 5.15
+import Lomiri.Components 1.3
+
+Page {
+    id: locationPage
+    title: "Route Tracker"
+
+    property var lastCoordinate: null
+    property double totalDistanceMeters: 0.0
+
+    PositionSource {
+        id: positionSource
+        // Conserve power: poll every 10 seconds rather than continuously
+        updateInterval: 10000
+        // Only trigger update if moved at least 15 meters
+        distanceFilter: 15.0
+        active: trackingSwitch.checked
+
+        onPositionChanged: {
+            var coord = position.coordinate
+            if (coord.isValid) {
+                latLabel.text = "Latitude: " + coord.latitude.toFixed(5)
+                lonLabel.text = "Longitude: " + coord.longitude.toFixed(5)
+                accuracyLabel.text = "Accuracy: ±" + position.horizontalAccuracy.toFixed(1) + " m"
+
+                if (lastCoordinate) {
+                    totalDistanceMeters += lastCoordinate.distanceTo(coord)
+                    distanceLabel.text = "Distance: " + (totalDistanceMeters / 1000).toFixed(2) + " km"
+                }
+                lastCoordinate = coord
+            }
+        }
+
+        onSourceErrorChanged: {
+            if (sourceError === PositionSource.AccessError) {
+                errorLabel.text = "Location permission denied in System Settings."
+            } else if (sourceError === PositionSource.ClosedError) {
+                errorLabel.text = "Location service is disabled globally."
+            }
+        }
+    }
+
+    Column {
+        anchors.fill: parent
+        anchors.margins: units.gu(2)
+        spacing: units.gu(1.5)
+
+        Row {
+            spacing: units.gu(2)
+            Label { text: "Enable GPS Tracking"; anchors.verticalCenter: parent.verticalCenter }
+            Switch { id: trackingSwitch }
+        }
+
+        Label { id: latLabel; text: "Latitude: --" }
+        Label { id: lonLabel; text: "Longitude: --" }
+        Label { id: accuracyLabel; text: "Accuracy: --" }
+        Label { id: distanceLabel; text: "Distance: 0.00 km" }
+        Label { id: errorLabel; color: Theme.palette.normal.negativeText; text: "" }
+    }
+}
+\`\`\`
+`
+        },
+        {
+          id: "content-hub-workflows",
+          title: "Real-World Content Hub Workflows: Import, Export & Share",
+          content: `
+### The Content Hub Philosophy
+
+Under AppArmor confinement, applications cannot browse or read arbitrary user directories (\`/home/phablet/Documents\`, \`/home/phablet/Pictures\`). 
+
+**Content Hub** is the secure IPC broker that enables apps to:
+* **Import**: Ask the user to select an existing file from Gallery, File Manager, or Camera.
+* **Export**: Save an app-generated file into the user's shared Documents, Downloads, or Pictures collection.
+* **Share**: Hand content to messaging apps, email, or social clients.
+
+### 1. Declaring Content Hub Hooks in manifest.json
+
+In \`manifest.json\`, declare the types of content your app handles:
+
+\`\`\`json
+{
+  "name": "dev.academy.fileworker",
+  "hooks": {
+    "fileworker": {
+      "apparmor": "apparmor.json",
+      "desktop": "fileworker.desktop",
+      "content-hub": "content-hub.json"
+    }
+  }
+}
+\`\`\`
+
+In \`content-hub.json\`:
+
+\`\`\`json
+{
+  "destination": [
+    "Pictures",
+    "Documents"
+  ],
+  "source": [
+    "Pictures"
+  ]
+}
+\`\`\`
+
+### 2. Importing a Picture via ContentPeerPicker
+
+\`\`\`qml
+import QtQuick 2.15
+import Lomiri.Components 1.3
+import Lomiri.Content 1.1
+
+Page {
+    id: importPage
+    title: "Document Scanner"
+
+    Image {
+        id: previewImage
+        anchors.top: parent.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: units.gu(30)
+        height: units.gu(30)
+        fillMode: Image.PreserveAspectFit
+    }
+
+    ContentPeerPicker {
+        id: peerPicker
+        visible: false
+        contentType: ContentType.Pictures
+        handler: ContentHandler.Source
+
+        onPeerSelected: (peer) => {
+            peer.request()
+            peerPicker.visible = false
+        }
+        onCancelPressed: {
+            peerPicker.visible = false
+        }
+    }
+
+    Connections {
+        target: ContentHub
+        function onImportExportHandled(transfer) {
+            if (transfer.state === ContentTransfer.Charged) {
+                // Read imported file path
+                var importedFileUrl = transfer.items[0].url
+                previewImage.source = importedFileUrl
+                transfer.finalize()
+            }
+        }
+    }
+
+    Button {
+        anchors.bottom: parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.margins: units.gu(2)
+        text: "Select Photo via Content Hub"
+        onClicked: peerPicker.visible = true
+    }
+}
+\`\`\`
+`
+        },
+        {
+          id: "url-dispatcher-deeplinks",
+          title: "URL Dispatcher & System Intent Integration",
+          content: `
+### Deep Linking and Inter-App Intents
+
+Ubuntu Touch utilizes **URL Dispatcher** as its system-wide URI router. URL Dispatcher allows applications to register custom URL schemes (e.g., \`matrix:\`, \`academy:\`) and trigger system actions without needing direct process-to-process IPC permissions.
+
+### 1. Registering a Custom URL Scheme
+
+In your app's \`manifest.json\`, attach a \`url-dispatcher\` hook:
+
+\`\`\`json
+{
+  "hooks": {
+    "myviewer": {
+      "apparmor": "apparmor.json",
+      "desktop": "myviewer.desktop",
+      "urls": "urls.json"
+    }
+  }
+}
+\`\`\`
+
+In \`urls.json\`:
+
+\`\`\`json
+{
+  "protocol": "academy",
+  "domains": []
+}
+\`\`\`
+
+Now, whenever any browser, email client, or terminal process opens a link like \`academy://module/06\`, Lomiri automatically launches or foregrounds your application.
+
+### 2. Handling Incoming URIs in QML
+
+\`\`\`qml
+import QtQuick 2.15
+import Lomiri.Components 1.3
+
+MainView {
+    id: root
+
+    Connections {
+        target: UriHandler
+        function onOpened(uris) {
+            for (var i = 0; i < uris.length; i++) {
+                handleDeepLink(uris[i])
+            }
+        }
+    }
+
+    function handleDeepLink(uri) {
+        console.log("Received incoming URI: " + uri)
+        if (uri.indexOf("academy://module/") === 0) {
+            var modNum = uri.replace("academy://module/", "")
+            jumpToModule(modNum)
+        }
+    }
+}
+\`\`\`
+
+### 3. Dispatching Common System Intents
+
+Your application can dispatch intents to native system applications using \`Qt.openUrlExternally()\`:
+
+| Intent Action | URL Format Example | Target Application |
+|---|---|---|
+| Place Phone Call | \`tel:+15550199\` | Lomiri Dialer |
+| Send SMS Message | \`sms:+15550199?body=Hello\` | Lomiri Messaging App |
+| Compose Email | \`mailto:dev@example.com?subject=Bug\` | Default Email Client |
+| Open Web Browser | \`https://open-store.io\` | Morph Browser |
+| Open System Settings | \`settings:///system/battery\` | Lomiri System Settings |
+| View OpenStore Package | \`openstore://dev.academy.app\` | OpenStore App |
+`
+        },
+        {
+          id: "background-push-notifications",
+          title: "Background Execution, Alarms & Lomiri Push Architecture",
+          content: `
+### The Challenge of Background Execution
+
+Because Ubuntu Touch freezes background processes using the Linux kernel cgroups freezer subsystem to conserve battery, applications cannot simply spin background worker threads or keep open WebSocket connections when minimized.
+
+To deliver real-time notifications and scheduled events, Ubuntu Touch provides two dedicated mechanisms:
+1. **Lomiri Push Notifications** (Remote events)
+2. **Alarm-Clock Service** (Local scheduled events)
+
+### 1. The Ubuntu Push Notification Architecture
+
+\`\`\`
++-----------------------+        +---------------------------+
+| Third-Party App Server| =====> | Ubuntu Touch Push Server  |
++-----------------------+  HTTPS +-------------+-------------+
+                                               |
+                                     Persistent|HTTP/2
+                                               v
+                                 +-------------+-------------+
+                                 | ubuntu-push-client daemon |
+                                 +-------------+-------------+
+                                               |
+                                          D-Bus|Push Helper
+                                               v
+                                 +-------------+-------------+
+                                 | Lomiri Notification Center|
+                                 +---------------------------+
+\`\`\`
+
+* **Single Connection**: The device maintains exactly one multiplexed HTTP/2 socket to the push server through the system \`ubuntu-push-client\` daemon.
+* **Zero App Battery Draw**: The application process is not running.
+* **Push Helper**: When a push payload arrives, the push daemon invokes a lightweight helper executable specified in the app's Click manifest. The helper formats the notification and posts it to the Lomiri notification tray.
+
+### 2. Local Scheduled Alarms via Alarm-Clock Service
+
+When building an alarm app, calendar reminder, or timed pomodoro, use the system alarm broker via D-Bus:
+
+\`\`\`qml
+import QtQuick 2.15
+import Lomiri.Components 1.3
+
+Item {
+    id: alarmScheduler
+
+    function scheduleAlarm(alarmTimeIso, message) {
+        // Interacts with com.canonical.indicator.datetime service
+        // Wakes device from suspend-to-RAM when alarm triggers
+        console.log("Alarm scheduled for: " + alarmTimeIso + " with message: " + message)
+    }
+}
+\`\`\`
+`
+        },
+        {
+          id: "sqlite-persistence",
+          title: "SQLite Persistence, Schema Migrations & Storage Architecture",
+          content: `
+### Sandboxed App Storage Hierarchy
+
+Every Click application runs within its own sandboxed data partitions located in the user's home folder:
+
+| Directory Path | Persistence Policy | Typical Content |
+|---|---|---|
+| \`~/.local/share/<app-pkg-name>/\` | Permanent across updates | SQLite databases, user notes, application state |
+| \`~/.config/<app-pkg-name>/\` | Permanent across updates | JSON/INI configuration files |
+| \`~/.cache/<app-pkg-name>/\` | Cleared by OS if disk full | Downloaded HTTP images, thumbnail caches |
+| \`/tmp/\` | Cleared on system reboot | Ephemeral scratch files |
+
+### 1. Production SQLite Database with Schema Migrations
+
+QML provides the \`QtQuick.LocalStorage\` module, a standardized SQL engine backed by SQLite:
+
+\`\`\`javascript
+// StorageService.js
+.pragma library
+
+var DB_VERSION = "2.0";
+
+function getDatabase() {
+    var db = LocalStorage.openDatabaseSync(
+        "AcademyDatabase",
+        "",
+        "Ubuntu Touch Academy Store",
+        1000000
+    );
+
+    // Handle schema migrations
+    if (db.version === "") {
+        db.changeVersion("", "1.0", function(tx) {
+            tx.executeSql(
+                "CREATE TABLE IF NOT EXISTS records (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "title TEXT NOT NULL, " +
+                "completed INTEGER DEFAULT 0);"
+            );
+        });
+    }
+
+    if (db.version === "1.0") {
+        db.changeVersion("1.0", "2.0", function(tx) {
+            tx.executeSql("ALTER TABLE records ADD COLUMN priority INTEGER DEFAULT 1;");
+            tx.executeSql("CREATE INDEX IF NOT EXISTS idx_priority ON records(priority);");
+        });
+    }
+
+    return db;
+}
+
+function insertRecord(title, priority) {
+    var db = getDatabase();
+    var insertedId = -1;
+    db.transaction(function(tx) {
+        var res = tx.executeSql(
+            "INSERT INTO records (title, priority) VALUES (?, ?);",
+            [title, priority]
+        );
+        insertedId = res.insertId;
+    });
+    return insertedId;
+}
+
+function loadRecords(callback) {
+    var db = getDatabase();
+    db.readTransaction(function(tx) {
+        var rs = tx.executeSql("SELECT id, title, completed, priority FROM records ORDER BY priority DESC;");
+        var items = [];
+        for (var i = 0; i < rs.rows.length; i++) {
+            items.push(rs.rows.item(i));
+        }
+        callback(items);
+    });
+}
+\`\`\`
+`
+        }
+      ]
+    },
+    {
+      id: "module-6-labs",
+      number: "07",
       title: "Hands-on Practical Labs (Teaching Curriculum)",
       summary: "Step-by-step student exercises: Environment setup, Hello Lomiri anatomy, building a full convergent database app, and OpenStore packaging.",
       readTime: "45 min practice",
@@ -1183,7 +1779,7 @@ clickable publish --api-key YOUR_API_KEY
     },
     {
       id: "module-7-porting",
-      number: "07",
+      number: "08",
       title: "Device Porting & Halium Bringup (Advanced)",
       summary: "Kernel configuration, vendor blob extraction, Halium ramdisk construction, and troubleshooting early boot.",
       readTime: "30 min read",
@@ -1262,6 +1858,130 @@ dmesg | grep -i -E "hybris|binder|mali|kgsl|drm"
 # 3. Lomiri user session supervisor
 journalctl -u lomiri --no-pager
 \`\`\`
+`
+        },
+        {
+          id: "real-world-porting-case",
+          title: "Case Study: Step-by-Step Halium Bringup on Real Hardware",
+          content: `
+### Step-by-Step Porting Case Study
+
+Bringing Ubuntu Touch to a new Android smartphone requires a systematic approach. This case study demonstrates how an unported Qualcomm Snapdragon 64-bit device is brought from a black screen to a functional Lomiri shell.
+
+### Phase 1: Device Identification & Kernel Validation
+
+1. **Identify Hardware Spec**:
+   * SoC: Qualcomm Snapdragon (e.g., SDM660 / SM7150)
+   * Architecture: \`aarch64\` (64-bit)
+   * Stock Android Base: Android 9 or 10 vendor tree
+   * Display Resolution: 1080x2340
+
+2. **Audit Kernel Defconfig**:
+   Run \`check-kernel-config\` against the device's kernel source:
+   \`\`\`bash
+   ./check-kernel-config arch/arm64/configs/lineage_device_defconfig -w
+   \`\`\`
+   Verify essential options are enabled:
+   * \`CONFIG_NAMESPACES=y\`
+   * \`CONFIG_USER_NS=y\`
+   * \`CONFIG_SECURITY_APPARMOR=y\`
+   * \`CONFIG_DEVTMPFS=y\`
+   * \`CONFIG_OVERLAY_FS=y\`
+   * \`CONFIG_ANDROID_BINDER_IPC=y\`
+
+3. **Build the Halium Boot Image**:
+   Compile the kernel and assemble \`hybris-boot.img\` containing the Halium initramfs.
+
+### Phase 2: Flashing and Early USB Networking
+
+Flash the stock Android vendor firmware, the Halium boot image, and the Ubuntu Touch rootfs:
+\`\`\`bash
+fastboot flash boot hybris-boot.img
+fastboot flash vendor vendor.img
+\`\`\`
+On initial reboot, the screen will likely remain dark because the graphics compositor has not yet initialized.
+
+Connect the device to your PC via USB cable. The Halium initramfs automatically establishes a virtual USB Ethernet adapter (RNDIS):
+\`\`\`bash
+# Configure host USB interface
+sudo ip addr add 10.15.19.100/24 dev usb0
+sudo ip link set usb0 up
+
+# Open Telnet session into early userspace
+telnet 10.15.19.82
+\`\`\`
+
+### Phase 3: Diagnosing Real Boot Errors
+
+Once logged in via Telnet or SSH, diagnose why graphics and shell failed to load:
+
+#### 1. Diagnosing libhybris EGL Crashes
+Inspect the Mir compositor log:
+\`\`\`bash
+cat /home/phablet/.local/share/xorg/Xorg.0.log
+# Or Mir log
+grep -i egl /var/log/syslog
+\`\`\`
+
+**Typical Error**:
+\`\`\`text
+libhybris: failed to load EGL library /vendor/lib64/egl/libGLES_mali.so: No such file or directory
+\`\`\`
+
+**Resolution**:
+Android vendor blobs expect linker search paths inside \`/vendor/lib64\` or \`/system/lib64\`.
+Check that Android vendor partitions are mounted properly:
+\`\`\`bash
+mount | grep vendor
+\`\`\`
+If unmounted, ensure \`/etc/fstab\` contains the correct block device node (e.g., \`/dev/block/bootdevice/by-name/vendor\`).
+
+#### 2. Diagnosing Android Binder Mismatch
+If Android services like \`hwcomposer\` or \`surfaceflinger\` fail to start:
+\`\`\`bash
+/system/bin/logcat | grep -i binder
+\`\`\`
+Verify whether the device uses 32-bit or 64-bit Binder IPC. Modern kernels must use 64-bit binder (\`CONFIG_ANDROID_BINDER_IPC_32BIT=n\`).
+
+#### 3. Fixing Backlight & Display Blanking
+If Lomiri is running in logs but the display remains completely black:
+\`\`\`bash
+# Inspect available backlight controls
+ls /sys/class/backlight/
+# Test turning on backlight manually
+echo 100 > /sys/class/backlight/panel0-backlight/brightness
+\`\`\`
+Configure the backlight sysfs path in \`/etc/device-info\` so \`repowerd\` knows which sysfs node controls the display panel.
+
+### Phase 4: Touchscreen Calibration & Display Orientation
+
+Once the lockscreen renders, the touch coordinates might be rotated or inverted:
+
+1. **Inspect Input Nodes**:
+   \`\`\`bash
+   # Run evtest to identify touch panel event node
+   evtest
+   # Select /dev/input/eventX corresponding to touchscreen
+   \`\`\`
+2. **Configure Orientation in device-info**:
+   In \`/etc/device-info\`:
+   \`\`\`ini
+   device_name="device_codename"
+   grid_unit="18"
+   portrait_orientation="primary"
+   primary_orientation="0"
+   \`\`\`
+
+### Phase 5: Verifying Core Services Checklist
+
+| Component | Verification Command | Success Indicator |
+|---|---|---|
+| GPU Acceleration | \`hybris-run /usr/bin/glmark2-es2\` | Score > 800 fps |
+| Touch Panel | \`evtest /dev/input/eventX\` | ABS_MT_POSITION_X / Y events |
+| Cellular RIL | \`ofono-test/list-modems\` | Modem detected with SIM IMSI |
+| Audio Playback | \`paplay /usr/share/sounds/lomiri/stereo/bell.ogg\` | Sound from loudspeaker |
+| Wi-Fi Hardware | \`nmcli device wifi list\` | Nearby SSIDs enumerated |
+| Battery / Charger | \`cat /sys/class/power_supply/battery/capacity\` | Valid battery percentage |
 `
         }
       ]
