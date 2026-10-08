@@ -1987,8 +1987,121 @@ Once the lockscreen renders, the touch coordinates might be rotated or inverted:
       ]
     },
     {
+      id: "module-challenges-roadmap",
+      number: "09",
+      title: "Platform Limitations & The Modern Roadmap",
+      summary: "An honest technical breakdown of current pain points (app gap, banking/DRM, VoLTE, camera stack, battery drain) and active engineering initiatives to solve them.",
+      readTime: "30 min read",
+      topics: [
+        {
+          id: "what-can-be-better",
+          title: "Critical Analysis: What Can Be Better (Current Pain Points)",
+          content: `
+### Honest Engineering Critique of Ubuntu Touch
+
+To improve an operating system, developers must maintain honest, unsparing technical assessments of its real-world shortcomings. While Ubuntu Touch provides freedom, privacy, and convergence, several systemic friction points remain for daily mainstream adoption.
+
+### 1. The Application Ecosystem Gap & Proprietary Dependencies
+
+The greatest barrier for average smartphone users is the absence of proprietary commercial mobile applications:
+* **Banking & Fintech Applications**: Modern banking applications mandate Google SafetyNet, Play Integrity API, hardware keystore attestation, and aggressive anti-tamper packers (e.g., DexGuard). Because Ubuntu Touch does not run certified Google proprietary services natively, native mobile banking is unavailable.
+* **Hardware DRM (Widevine L1 / FairPlay)**: Streaming providers (Netflix, Disney+, Amazon Prime Video) require hardware-backed Widevine Level 1 DRM for high-definition (1080p/4K) playback. On ARM64 Linux, browsers only support Widevine L3 software emulation (capped at 480p/720p) or lack CDM binaries entirely.
+* **Proprietary Messengers**: Essential communication platforms like WhatsApp, Signal, and WeChat rely on Google Play Services for push notifications (FCM) and telephony. Running them inside Waydroid consumes additional RAM and battery power.
+
+### 2. Cellular Telephony & VoLTE/IMS Stack Fragmentation
+
+Globally, telecom carriers are shutting down legacy 2G (GSM) and 3G (UMTS) cellular networks, moving entirely to 4G LTE and 5G NR.
+* Under 2G/3G, phone calls switched via circuit-switched fallback (CSFB) using standard standardized AT commands that oFono handled easily.
+* Under pure 4G/5G networks, voice calls require **VoLTE (Voice over LTE)** via an IP Multimedia Subsystem (IMS) stack.
+* Major SoC vendors (Qualcomm, MediaTek, Samsung Exynos) implement IMS inside proprietary, closed-source Android radio daemons with vendor-specific AT command extensions. Reverse-engineering these stacks for open-source oFono requires deep modem protocol analysis per chipset family. Without VoLTE, a device cannot place or receive phone calls or dial emergency services in regions with retired 3G networks.
+
+### 3. Camera Subsystem & Computational Photography
+
+Modern smartphone camera hardware is vastly more complex than generic USB webcams:
+* Hardware involves multi-lens arrays (wide, ultrawide, macro, periscope telephoto), hardware autofocus VCM actuators, and dedicated Image Signal Processors (ISPs).
+* Commercial Android relies on sophisticated computational photography pipelines (multi-frame HDR fusion, night mode exposure stacking, semantic segmentation).
+* In Ubuntu Touch, camera capture on Halium devices routes through libhybris wrappers to Android's \`camera.device@3.x\` HAL or \`camera-service\`. While basic photo and video capture functions, advanced multi-camera switching, HDR stacking, and hardware-accelerated 60fps video encoding often encounter stability and color tuning issues across different device trees.
+
+### 4. Standby Power Consumption & Battery Life
+
+While Ubuntu Touch implements \`repowerd\` and freezes background application processes via cgroups, it lacks an automated machine-learning battery optimization framework comparable to modern Android Doze:
+* Unoptimized background push notifications or misconfigured cellular modems can trigger repeated CPU wakeups.
+* Standby battery life on ported Android hardware typically ranges between 24 and 48 hours, whereas stock Android on identical hardware can reach 72 hours due to deep proprietary Qualcomm power-management firmware integration.
+
+### 5. Waydroid Resource Footprint on Low-End Hardware
+
+Waydroid is a vital compatibility tool, but running an entire LineageOS Android userspace container consumes significant memory:
+* A running Waydroid container requires 800 MB to 1.5 GB of RAM.
+* On older or budget smartphones equipped with only 2 GB or 3 GB of physical RAM, multitasking between Lomiri desktop apps and Android applications triggers aggressive Linux kernel Low Memory Killer (LMK) sweeps, terminating background processes.
+`
+        },
+        {
+          id: "what-we-are-doing",
+          title: "The Active Engineering Roadmap: What We Are Doing to Make It Better",
+          content: `
+### Concrete Ongoing Engineering Initiatives
+
+The UBports Foundation and the global mobile Linux community are executing an ambitious technical roadmap to eliminate these architectural bottlenecks.
+
+### 1. Ubuntu 24.04 LTS (Noble Numbat) System Rebase
+
+The core operating system is undergoing a generational upgrade to **Ubuntu 24.04 LTS (Noble Numbat)**:
+* **Modern System Toolchain**: Upgrades GCC to 13/14, glibc to 2.39, Python to 3.12, and systemd to version 255.
+* **Security & Performance**: Modern compiler optimizations, enhanced security hardening flags, and updated core Linux utilities.
+* **Long-Term Stability**: Guarantees five years of upstream security maintenance and package backports.
+
+### 2. The Great Qt 6 & Lomiri Toolkit Migration
+
+Lomiri, the Lomiri UI Toolkit, and all core applications are being ported from Qt 5.15 to **Qt 6.5+ LTS**:
+* **Modern Rendering Hardware Interface (RHI)**: Qt 6 decouples the UI Scene Graph from legacy OpenGL ES, allowing native rendering via Vulkan, OpenGL, and optimized software pipelines.
+* **Memory & Performance**: Reduced memory footprint, faster QML declarative compilation into native C++ bytecode, and smoother 60fps / 120fps display rendering.
+* **Upstream Alignment**: Ensures developers can build modern apps using contemporary Qt 6 APIs rather than deprecated Qt 5 patterns.
+
+### 3. VoLTE & IMS Modernization via ofono-ims
+
+To solve the global VoLTE crisis, the community is developing modern open-source IMS capabilities:
+* **ofono-ims Plugins**: Native implementation of IMS registration, SIP signaling, and voice codec negotiation interfacing with Qualcomm and MediaTek baseband modems.
+* **VoLTE Enablement**: Successfully verified on multiple popular ports (including Volla Phone 22, Google Pixel 3a, and Fairphone 4).
+* **Emergency Calling Compliance**: Ensuring regulatory compliance for emergency numbers (112, 911, 999) on pure LTE networks.
+
+### 4. Next-Generation Audio Subsystem: PipeWire Transition
+
+Ubuntu Touch is migrating from legacy PulseAudio-droid to **PipeWire**:
+* **Low-Latency Routing**: Sub-millisecond audio routing matching professional audio workstations.
+* **Bluetooth LE Audio**: Native support for modern Low Energy Audio (LC3 codec), multi-device broadcast audio (Auracast), and improved voice call quality over Bluetooth headsets.
+* **Resource Sharing**: Seamless audio stream isolation between native Lomiri applications, Waydroid Android containers, and flatpaks.
+
+### 5. Native Wayland Compositor (Mir 2.16+ & Pure Protocols)
+
+The Mir display server is transitioning to full upstream Wayland protocol compliance:
+* Moving away from legacy Android surface buffer workarounds toward standard \`linux-dmabuf\`, \`xdg-shell\`, and \`wlr-layer-shell\` protocols.
+* Facilitates seamless cross-compatibility: standard Wayland applications built for Fedora, Arch, or Debian run unmodified on Ubuntu Touch without requiring Xwayland translation layers.
+
+### 6. Mainline Linux Kernel Bringup & Open Source Firmware
+
+In close collaboration with postmarketOS, Mobian, and upstream Linux kernel developers:
+* Transitioning supported hardware (PinePhone Pro, Volla Phone 22, Fairphone 4/5, Shift6mq) to pure upstream mainline Linux kernels (Linux 6.1, 6.6, 6.12 LTS).
+* Developing open-source camera pipelines via **libcamera** and standard V4L2 drivers, eliminating dependency on proprietary Android camera HAL blobs.
+
+### 7. Upstream Distribution Packaging (Debian, openSUSE, Arch, Fedora)
+
+Lomiri is no longer locked solely to Ubuntu Touch. It is actively packaged and maintained upstream:
+* Official packages in Debian Unstable and Testing.
+* Official packages in openSUSE, Arch Linux AUR, and Fedora mobile SIG.
+* Allows developers and enthusiasts to run the Lomiri convergent desktop environment on laptops, tablets, and handheld devices running their Linux distribution of choice.
+
+### 8. OpenStore Modernization & Automated CI Review Tooling
+
+The application ecosystem tooling is continuously refined:
+* **Automated Static Analysis**: Every uploaded Click package is analyzed in GitLab CI for AppArmor permission abuse, security vulnerabilities, and deprecated APIs before publication.
+* **Clickable v8**: Multi-architecture container caching, native Rust and Go language template support, and streamlined one-command publication to OpenStore.
+`
+        }
+      ]
+    },
+    {
       id: "module-8-classroom",
-      number: "08",
+      number: "10",
       title: "Instructor Kit, Syllabus & Quizzes",
       summary: "Course syllabus for university/bootcamp classes, lecture slide outlines, interactive quizzes with explanations, and grading rubrics.",
       readTime: "20 min read",
