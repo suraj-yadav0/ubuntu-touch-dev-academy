@@ -734,6 +734,101 @@ MainView {
 
 When \`root.width\` exceeds 100 Grid Units, the second column displays alongside the first. On narrower screens, \`AdaptivePageLayout\` automatically pushes the detail view onto the single-column navigation stack with a slide animation.
 `
+        },
+        {
+          id: "lomiri-design-guidelines",
+          title: "Lomiri Human Interface Guidelines & Design System",
+          content: `
+### Principles of Lomiri Application Design
+
+The Lomiri shell has a distinctive user experience based on edge swipes, physical grid scaling, tactile surfaces, and seamless hardware convergence. Building an application that feels native on Ubuntu Touch requires adherence to the **Lomiri Human Interface Guidelines (HIG)**.
+
+### 1. The Edge Interaction Model
+
+Lomiri reserves all four physical edges of the display for operating system gestures:
+
+| Screen Edge | Shell Action | Application Design Rule |
+|---|---|---|
+| **Left Edge** | Short swipe: App launcher dock<br>Long swipe: Home screen | **Never** place navigation drawers or swipeable side panels on the left boundary. They collide with the launcher. |
+| **Right Edge** | Short swipe: Previous running application<br>Long swipe: 3D application spread | **Never** implement horizontal carousel edge swiping that starts on the extreme right border. |
+| **Top Edge** | Pull-down menu: System indicators (Sound, Wi-Fi, Battery, Clock, Notifications) | Reserve top area for the standard header bar. Do not capture downward swipes in the top 3gu zone. |
+| **Bottom Edge** | Application actions sheet | **Recommended** location for primary contextual actions using \`PageWithBottomEdge\`. |
+
+> [!WARNING]
+> Trapping screen edge swipes is the number one cause of user rejection on Ubuntu Touch. Always place internal app gesture triggers at least 2gu to 3gu inward from the display boundaries.
+
+### 2. The Grid Unit (gu) Sizing Matrix
+
+To ensure that UI elements render at predictable physical sizes across devices with differing pixel densities (160 dpi to 640 dpi), Lomiri uses Grid Units (\`units.gu\`).
+
+1 Grid Unit (\`units.gu(1)\`) corresponds to approximately 8 density-independent pixels on standard screens.
+
+| UI Element | Recommended Size | Purpose & Rationale |
+|---|---|---|
+| Minimum Touch Target | \`units.gu(6)\` (48px) | The human thumb needs at least 7-9mm physical area to prevent mis-taps. |
+| Primary App Header | \`units.gu(7)\` height | Provides ample padding for back button, title, and contextual actions. |
+| Standard Margin/Padding | \`units.gu(2)\` | Consistent whitespace between cards, list items, and form elements. |
+| Compact Inset | \`units.gu(1)\` | Internal padding within buttons and small chips. |
+| Primary Action Button | \`units.gu(5)\` height | Prominent visual weight for form submissions and primary actions. |
+| Small Icon | \`units.gu(2.5)\` | Inline icons inside buttons and list item sub-headers. |
+| Standard Icon | \`units.gu(3.5)\` | Navigation tab icons and toolbar action glyphs. |
+| Large Icon / Avatar | \`units.gu(6)\` to \`units.gu(8)\` | Profile pictures and media thumbnail previews. |
+
+#### Typography Scale
+
+Always use proportional font sizes expressed via \`units.gu\`:
+* **Page Header**: \`units.gu(3.0)\` (Bold)
+* **Section Heading**: \`units.gu(2.25)\` (Medium)
+* **Standard Body**: \`units.gu(1.75)\` (Regular)
+* **Secondary / Caption**: \`units.gu(1.35)\` (Muted)
+
+### 3. The Suru Design Language & Iconography
+
+Lomiri's visual identity is known as **Suru**. Inspired by the Japanese art of paper folding (origami), Suru emphasizes tactile paper sheets, clean planar surfaces, subtle 45-degree angled fold lines, and precise geometry.
+
+#### Application Icon Standards
+* **Suru Squircle Form**: Application icons must be shaped using the standard Ubuntu squircle geometry (\`UbuntuShape\`), not random circles, hexagons, or sharp squares.
+* **Focal Element**: Every icon should feature a single recognizable glyph or metaphor centered on the squircle.
+* **No Embedded Text**: Never write app names or tiny explanatory text inside the icon.
+* **Vector Source**: Author icons as clean SVGs so OpenStore can render crisp assets from 64x64 up to 512x512.
+
+#### Color Palette & Contrast
+Lomiri provides an intentional color palette:
+* **Canonical Orange** (\`#e95420\`): Primary call-to-actions, active selection rings, and progress indicators.
+* **Ubuntu Aubergine** (\`#77216f\`): Primary branding accents and dark header surfaces.
+* **Ubuntu Mid-Aubergine** (\`#5e2750\`): Secondary branding and gradient stops.
+* **Positive Green** (\`#0e8420\` / \`#10b981\`): Success states and confirmations.
+* **Negative Red** (\`#df382c\` / \`#ef4444\`): Destructive actions (Delete, Disconnect, Clear).
+
+> [!NOTE]
+> Never hardcode static RGB colors like \`#ffffff\` for card backgrounds. Use \`Theme.palette.normal.background\` and \`Theme.palette.normal.baseText\` so your application automatically respects system-wide Dark and Light themes.
+
+### 4. Convergence Breakpoints & Layout States
+
+When writing convergent applications, structure your views around three standard viewport widths:
+
+1. **Compact (< 60gu - Phone Portrait)**:
+   * Single-column navigation stack.
+   * Back button displayed on pushed sub-pages.
+   * Actions sheet tucked into bottom edge drawer.
+2. **Medium (60gu - 100gu - Phablet / Tablet Landscape)**:
+   * Dual-pane master-detail view.
+   * Left column shows searchable list of records.
+   * Right column shows selected record details.
+   * Persistent toolbar actions visible at top right.
+3. **Expanded (> 100gu - Desktop Monitor / Docked Window)**:
+   * Multi-column layouts with sidebar tree, item list, and editor panes.
+   * Floating desktop window with maximize, minimize, and close window controls.
+   * Accelerators: Keyboard shortcuts mapped via \`Shortcut\` items (\`Ctrl+N\`, \`Ctrl+F\`, \`Ctrl+S\`, \`Escape\`).
+   * Mouse pointer hover feedback on buttons and table rows.
+
+### 5. Touch vs Pointer Input Duality
+
+Convergent software must gracefully handle both finger touch and mouse pointer interaction:
+* **Hover States**: Touchscreens do not produce mouse hover events. Never hide essential controls behind hover-only reveals. All critical actions must remain discoverable without hovering.
+* **Right-Click Context Menus**: On desktop mode, users expect right-click context menus. On touchscreens, the equivalent interaction is a long-press (500ms). Use Lomiri's \`ContextMenu\` component which automatically binds to both right-click and long-press.
+* **Keyboard Tab Navigation**: Ensure input forms support \`activeFocusOnTab: true\` so users with physical keyboards can move between text inputs effortlessly.
+`
         }
       ]
     },
