@@ -101,6 +101,64 @@ Key milestones of the community era:
 5. **Focal Fossa Transition (20.04)**: Rebased the entire operating system from 16.04 to Ubuntu 20.04 LTS, replacing Upstart with modern systemd, upgrading Qt from 5.9 to Qt 5.15, adopting 64-bit arm64 as standard, and enabling modern Waydroid container support.
 6. **Noble Numbat Migration (24.04)**: Active porting and stabilization work targeting Ubuntu 24.04 LTS base.
 `
+        },
+        {
+          id: "motivation-sovereignty",
+          title: "Core Motivation: Digital Sovereignty, Privacy & Hardware Longevity",
+          content: `
+### Why Ubuntu Touch Exists and Matters
+
+Smartphones have become the primary computing device for humanity, storing personal correspondence, banking credentials, biometric data, and real-time physical locations. However, the contemporary mobile ecosystem is entirely controlled by a commercial duopoly: Apple iOS and Google Android.
+
+Ubuntu Touch exists to provide a viable, fully open, independent third alternative rooted in the traditions of GNU/Linux and software freedom.
+
+### The Mobile Duopoly Crisis
+
+| Vector | The Duopoly Model (iOS / Android) | The Ubuntu Touch Model |
+|---|---|---|
+| User Privacy | Telemetry, device fingerprinting, ad identifiers | Zero telemetry, no analytics, no ad tracking |
+| Cloud Dependence | Mandatory Apple ID or Google Play Services account | Zero account required to boot, use, or install apps |
+| System Access | Locked bootloaders, root access forbidden or penalized | True root access available via developer mode |
+| Application Store | Arbitrary app review rules, 15-30% platform rent | OpenStore: open, community-curated, no platform tax |
+| Hardware Lifespan | Forced obsolescence after 2 to 4 years | Community LTS support extending hardware to 8+ years |
+| System Control | Remote app revocation, forced cloud backups | Local filesystem control, local backup via standard tar/rsync |
+
+### Digital Sovereignty & Privacy by Design
+
+Digital sovereignty is the right of individuals, organizations, and states to control their digital destiny, data, and compute infrastructure without unilateral third-party surveillance or dependency.
+
+Ubuntu Touch enforces privacy by design:
+1. **Zero Corporate Account Gatekeeping**: You can pull a fresh Ubuntu Touch phone out of the box, skip every setup screen, connect to Wi-Fi or cellular networks, and install software immediately without giving an email address or credit card.
+2. **Transparent Networking**: No background daemons continuously ping corporate servers with location pings, device diagnostics, or app usage metrics. All outbound traffic can be inspected and verified with standard Linux networking tools (\`tcpdump\`, \`wireshark\`, \`iptables\`, \`nftables\`).
+3. **App Confinement by Default**: Even native apps installed from OpenStore are constrained by AppArmor profiles that prevent silent access to camera, microphone, contacts, or location without explicit user permission.
+
+### Combating Planned Obsolescence and E-Waste
+
+Global electronic waste is an ecological crisis. Millions of functional smartphones are discarded each year because manufacturers stop releasing security updates and new OS versions, rendering them insecure or unsupported by commercial app stores.
+
+Modern smartphone hardware from 2017 onward contains 6 to 8 core 64-bit ARM processors, 4 to 8 gigabytes of RAM, and fast UFS or eMMC flash storage. This hardware is more powerful than the desktop computers used to land rovers on Mars or develop early Linux kernels.
+
+> [!NOTE]
+> By decoupling the operating system from commercial OEM support cycles, Ubuntu Touch breathes a second life into discarded hardware. Devices like the Google Pixel 3a, OnePlus 5, Xiaomi Redmi Note 7, and Fairphone 2 continue to receive modern, patched Linux updates years after commercial OEM abandonment.
+
+### The True Convergence Paradigm
+
+Desktop computers and mobile phones have traditionally been treated as mutually exclusive device classes. Users carry a smartphone for quick tasks and sit down at a desktop or laptop for real productivity.
+
+Ubuntu Touch approaches convergence not as a remote desktop stream or a blown-up phone app screen, but as a **single unified Unix computer**:
+* When held in the hand, the Lomiri interface provides touch edge swipes, single-column lists, and mobile ergonomics.
+* When connected to a monitor, keyboard, and mouse via USB-C or wireless display, the same running processes dynamically transition into free-floating, multi-window desktop applications.
+* The device contains real GNU coreutils, standard \`bash\`, \`ssh\`, \`git\`, \`python3\`, \`gcc\`, and system daemons. It is a portable workstation that fits into a pocket.
+
+### The UBports Foundation Governance
+
+Unlike corporate projects that can be canceled by executive committee, Ubuntu Touch is governed by the **UBports Foundation** (*UBports gemeinnützige UG*), an officially recognized non-profit entity based in Berlin, Germany.
+
+Foundation governance ensures:
+* **Legal Stewardship**: Intellectual property, domains, trademarks, and server infrastructure belong to the community and cannot be seized or bought out.
+* **Financial Transparency**: Donations, grants, and hardware sponsorships are audited under German non-profit foundation laws and dedicated entirely to developer bounties, infrastructure, and hardware test labs.
+* **Open Decision Making**: Technical steering committee meetings, bi-weekly community Q&A livestreams, and GitLab merge requests are public and accessible to anyone.
+`
         }
       ]
     },
@@ -263,6 +321,81 @@ To address the "app gap", Ubuntu Touch integrates **Waydroid**:
 * Waydroid runs an entire LineageOS Android system inside an isolated LXC container.
 * Android renders its GUI directly to shared memory buffers and hands them to the host Mir Wayland compositor.
 * Zero hardware emulation penalty: Android apps run on the native ARM CPU with native GPU acceleration.
+`
+        },
+        {
+          id: "thinking-process-mobile-linux",
+          title: "Engineering Thinking Process: Mobile Linux vs Desktop Linux",
+          content: `
+### The Fundamental Architectural Divergence
+
+A common misconception among software engineers entering mobile Linux is that a mobile operating system is simply a desktop Linux distribution with an onscreen keyboard and larger buttons.
+
+In reality, mobile hardware imposes severe physical, thermal, and electrical constraints that dictate entirely different architectural decisions:
+
+| Vector | Desktop Linux Workstation | Mobile Linux (Ubuntu Touch) |
+|---|---|---|
+| Power Source | Continuous AC mains (45W - 350W) | Limited Li-ion cell (12Wh - 18Wh, 0.2W idle target) |
+| Process Scheduling | Standard CFS fair scheduling | Cgroups freezer: non-active apps are suspended in memory |
+| Display Server | Xorg / standard desktop Wayland | Mir Wayland with mobile touch gestures and screen rotation |
+| Touch Ergonomics | 1-pixel mouse pointer precision | Coarse touch contacts (minimum 6gu / 48dp targets) |
+| Memory Management | Swap on fast NVMe SSD | ZRAM swap in RAM; aggressive low-memory killing (LMK) |
+| Audio Routing | Static ALSA / PipeWire desktop sinks | Dynamic routing: earpiece, loud speaker, mic beamforming, BT SCO |
+| Connectivity | Static Wi-Fi or Ethernet | Cellular radio handovers, SIM switching, roaming |
+
+### Power Management: The Microampere Budget
+
+On a desktop computer, a background daemon waking up 20 times per second to check for network updates causes imperceptible CPU load (0.1%).
+
+On a smartphone, that same background daemon keeps the CPU cores awake, preventing the SoC (System on Chip) from dropping into deep sleep C-states. Instead of drawing 15 mA in standby (lasting 3 to 4 days), the device draws 250 mA to 400 mA, draining the entire battery in 6 to 8 hours without user interaction.
+
+> [!WARNING]
+> Unmodified desktop Linux software (such as Electron apps or continuous polling daemons) rapidly drains mobile batteries. Mobile Linux software must rely on event-driven kernel epoll/inotify notifications or system push daemons rather than polling loops.
+
+#### The Suspend-to-RAM Lifecycle
+
+When the screen turns off, the system executes a coordinated sleep flow:
+1. **Screen Inactivity**: \`repowerd\` registers display timeout or user tap on power button.
+2. **Backlight & Compositor Blanking**: Display panel backlight is powered down; Mir compositor stops scheduling frame swaps.
+3. **Cgroups Freezing**: The systemd user session signals the cgroups freezer subsystem. All user-space application threads are halted in place without saving or exiting.
+4. **Wake Lock Verification**: \`repowerd\` checks whether any privileged system services hold active kernel wake locks (such as active audio playback or ongoing package download).
+5. **SoC Low-Power State**: If no wake locks exist, the Linux kernel writes to \`/sys/power/state\` (\`mem\` or \`s2idle\`), shutting down CPU clock trees, turning off memory controller high-frequency clocks, and placing the ARM cores into low-leakage sleep.
+6. **Hardware Wake Interrupts**: Only baseband modem (incoming phone calls/SMS), real-time clock (RTC alarms), and power button GPIO interrupts can wake the system.
+
+### The Packaging Trade-Off: Why Click Over Snaps and Flatpaks
+
+Engineers frequently ask why Ubuntu Touch uses the **Click** packaging format instead of canonical Snaps or desktop Flatpaks.
+
+The decision stems directly from mobile storage and memory constraints:
+* **Snaps on Mobile**: Snaps mount each package as a read-only SquashFS image on a loop device. Having 40 installed apps requires 40 active loopback mounts, each consuming kernel memory and slowing system boot times on resource-limited eMMC flash storage.
+* **Flatpaks on Mobile**: Flatpaks rely on bubblewrap and desktop XDG desktop portal services designed for full desktop sessions, which historically carried higher memory footprints and lacked mobile lifecycle hooks.
+* **Click Packaging**: A Click package is a simple gzip/xz archive that unpacks into a single versioned directory (\`/opt/click.ubuntu.com/app.name/version\`).
+  * Zero loop device mounts.
+  * Static AppArmor profile generated once at installation.
+  * Fast sub-second launch times directly from flash storage.
+
+### The Hardware Compromise: Halium vs Pure Mainline Linux
+
+Mobile Linux projects face an engineering dilemma:
+1. **The Purist Approach**: Support only devices that run pure upstream mainline Linux kernels with open-source graphics and modem drivers (e.g., PinePhone, Librem 5).
+   * Advantage: Fully open, standard Linux toolchain, clean upstream kernel updates.
+   * Disadvantage: Extremely limited hardware availability; older, slower, and more power-hungry processors.
+2. **The Pragmatic Approach (Halium / libhybris)**: Support commercially available consumer smartphones by reusing Android vendor binary blobs via libhybris.
+   * Advantage: Instantly opens up dozens of powerful, power-efficient commercial smartphones with fast cameras and modern displays.
+   * Disadvantage: Technical debt of maintaining libhybris dynamic linker wrappers and Android kernel driver trees.
+
+Ubuntu Touch embraces both: using Halium to provide accessible hardware to tens of thousands of users today, while collaborating closely with the postmarketOS and Linux kernel communities to transition devices to pure mainline Linux whenever open drivers become viable.
+
+### The Post-Mortem of the Scopes Paradigm
+
+When Canonical launched Ubuntu Touch, they replaced the traditional grid of application icons with **Scopes**—horizontal panels streaming live internet data (Nearby, News, Music, Weather).
+
+Why did this model fail?
+1. **Cognitive Ergonomics**: Humans mentally map their computing activities into distinct "tools" and "rooms" (e.g., "I want to open my calculator", "I want to compose an email"). Aggregating everything into a stream broke task boundaries and created cognitive fatigue.
+2. **Battery and Bandwidth Cost**: Continuously polling dozens of web services across multiple scopes in the background drained battery and wasted mobile data plans.
+3. **Ecosystem Resistance**: Third-party services were unwilling to maintain specialized REST endpoints for Scopes when users simply wanted full native applications.
+
+The UBports community learned from this experiment: mobile operating systems must prioritize **fast, responsive, standalone native applications** with clear boundaries and deterministic lifecycles.
 `
         }
       ]
