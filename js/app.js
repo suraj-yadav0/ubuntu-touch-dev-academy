@@ -250,51 +250,114 @@
   function formatMarkdownContent(raw) {
     if (!raw) return '';
 
-    // Convert code blocks
-    let html = raw.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    // Convert and stash code blocks to avoid regex collisions
+    const codeBlocks = [];
+    let processed = raw.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
       const language = lang || 'text';
       const escaped = escapeHtml(code.trim());
-      return `
-        <div class="code-block-wrapper">
-          <div class="code-header">
-            <span>${language}</span>
-            <button class="copy-btn" data-code="${escapeAttribute(code.trim())}">Copy Code</button>
-          </div>
-          <pre><code>${escaped}</code></pre>
-        </div>
-      `;
+      const placeholder = '@@@CODEBLOCK_' + codeBlocks.length + '@@@';
+      codeBlocks.push(
+        '<div class="code-block-wrapper">' +
+          '<div class="code-header">' +
+            '<span>' + language + '</span>' +
+            '<button class="copy-btn" data-code="' + escapeAttribute(code.trim()) + '">Copy Code</button>' +
+          '</div>' +
+          '<pre><code>' + escaped + '</code></pre>' +
+        '</div>'
+      );
+      return placeholder;
     });
 
-    // Convert inline code
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Stash inline code
+    const inlineCodes = [];
+    processed = processed.replace(/`([^`]+)`/g, (match, code) => {
+      const placeholder = '@@@INLINECODE_' + inlineCodes.length + '@@@';
+      inlineCodes.push('<code>' + escapeHtml(code) + '</code>');
+      return placeholder;
+    });
+
+    // Markdown Links: [text](url)
+    processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+      const isExternal = url.startsWith('http://') || url.startsWith('https://');
+      const attrs = isExternal ? ' target="_blank" rel="noopener noreferrer" class="doc-link external-link"' : ' class="doc-link"';
+      return '<a href="' + url + '"' + attrs + '>' + text + '</a>';
+    });
 
     // Headers
-    html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
-    html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    processed = processed.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+    processed = processed.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+    processed = processed.replace(/^## (.*$)/gim, '<h2>$1</h2>');
 
     // Bold & italic
-    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    processed = processed.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    processed = processed.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+    // Markdown Tables
+    processed = processed.replace(/((?:^\|[^\n]+\|\r?\n)+)/gm, (tableText) => {
+      const lines = tableText.trim().split('\n').map(l => l.trim()).filter(Boolean);
+      if (lines.length < 2) return tableText;
+      const headerLine = lines[0];
+      const isDivider = /^\|[\s-:]+(?:\|[\s-:]+)+\|$/.test(lines[1]);
+      const bodyLines = isDivider ? lines.slice(2) : lines.slice(1);
+      
+      const parseRow = (row, tag) => {
+        const cells = row.split('|').slice(1, -1).map(c => c.trim());
+        return '<tr>' + cells.map(c => '<' + tag + '>' + c + '</' + tag + '>').join('') + '</tr>';
+      };
+
+      let tableHtml = '<div class="table-responsive"><table class="data-table">';
+      tableHtml += '<thead>' + parseRow(headerLine, 'th') + '</thead>';
+      if (bodyLines.length > 0) {
+        tableHtml += '<tbody>' + bodyLines.map(r => parseRow(r, 'td')).join('') + '</tbody>';
+      }
+      tableHtml += '</table></div>';
+      return tableHtml;
+    });
+
+    // Blockquotes & Callout Alerts: > [!NOTE] or > quote
+    processed = processed.replace(/(?:^>[^\n]*(?:\n>[^\n]*)*)/gm, (quoteText) => {
+      const cleanLines = quoteText.split('\n').map(l => l.replace(/^>\s?/, '').trim());
+      const first = cleanLines[0];
+      let alertType = null;
+      let title = '';
+      if (first.startsWith('[!NOTE]')) { alertType = 'note'; title = 'Note'; cleanLines[0] = cleanLines[0].replace('[!NOTE]', '').trim(); }
+      else if (first.startsWith('[!TIP]')) { alertType = 'tip'; title = 'Tip'; cleanLines[0] = cleanLines[0].replace('[!TIP]', '').trim(); }
+      else if (first.startsWith('[!IMPORTANT]')) { alertType = 'important'; title = 'Important'; cleanLines[0] = cleanLines[0].replace('[!IMPORTANT]', '').trim(); }
+      else if (first.startsWith('[!WARNING]')) { alertType = 'warning'; title = 'Warning'; cleanLines[0] = cleanLines[0].replace('[!WARNING]', '').trim(); }
+      
+      const content = cleanLines.filter(Boolean).join(' ');
+      if (alertType) {
+        return '<div class="callout-box callout-' + alertType + '"><div class="callout-title">' + title + '</div><p>' + content + '</p></div>';
+      }
+      return '<blockquote><p>' + cleanLines.join(' ') + '</p></blockquote>';
+    });
 
     // Unordered lists
-    html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
-    html = html.replace(/(<li>[\s\S]*?<\/li>)/gim, '<ul>$1</ul>');
-    html = html.replace(/<\/ul>\s*<ul>/g, '');
+    processed = processed.replace(/^[\*\-] (.*$)/gim, '<li>$1</li>');
+    processed = processed.replace(/((?:<li>.*?<\/li>\s*)+)/gim, '<ul>$1</ul>');
 
     // Ordered lists
-    html = html.replace(/^[0-9]+\. (.*$)/gim, '<li>$1</li>');
+    processed = processed.replace(/^[0-9]+\. (.*$)/gim, '<oli>$1</oli>');
+    processed = processed.replace(/((?:<oli>.*?<\/oli>\s*)+)/gim, '<ol>$1</ol>');
+    processed = processed.replace(/<\/?oli>/gim, (tag) => tag.includes('/') ? '</li>' : '<li>');
 
     // Paragraphs
-    html = html.split('\n\n').map(p => {
-      p = p.trim();
-      if (!p) return '';
-      if (p.startsWith('<div') || p.startsWith('<h') || p.startsWith('<ul') || p.startsWith('<ol') || p.startsWith('<table') || p.startsWith('<section')) {
-        return p;
+    const blocks = processed.split(/\n\s*\n/).map(block => {
+      const trimmed = block.trim();
+      if (!trimmed) return '';
+      if (trimmed.startsWith('<div') || trimmed.startsWith('<h') || trimmed.startsWith('<ul') || 
+          trimmed.startsWith('<ol') || trimmed.startsWith('<table') || trimmed.startsWith('<blockquote') || 
+          trimmed.startsWith('<section') || trimmed.startsWith('@@@CODEBLOCK')) {
+        return trimmed;
       }
-      return `<p>${p}</p>`;
-    }).join('\n');
+      return '<p>' + trimmed + '</p>';
+    }).filter(Boolean).join('\n\n');
 
-    return html;
+    // Restore stashed placeholders
+    let finalHtml = blocks.replace(/@@@INLINECODE_(\d+)@@@/g, (_, idx) => inlineCodes[idx]);
+    finalHtml = finalHtml.replace(/@@@CODEBLOCK_(\d+)@@@/g, (_, idx) => codeBlocks[idx]);
+
+    return finalHtml;
   }
 
   function escapeHtml(str) {
