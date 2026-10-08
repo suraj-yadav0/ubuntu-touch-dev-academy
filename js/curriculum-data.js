@@ -2100,8 +2100,116 @@ The application ecosystem tooling is continuously refined:
       ]
     },
     {
-      id: "module-8-classroom",
+      id: "module-ecosystem-resources",
       number: "10",
+      title: "Comprehensive Ecosystem Directory & Reference Links",
+      summary: "The definitive curated repository of official documentation, core source code trees, app store infrastructure, community channels, device porting portals, and developer toolchains.",
+      readTime: "25 min read",
+      topics: [
+        {
+          id: "official-docs-specs",
+          title: "Official Documentation, Specifications & Guides",
+          content: `
+### Primary Documentation Portals
+
+| Resource | Scope & Purpose | Direct Link |
+|---|---|---|
+| **UBports Documentation Portal** | Official end-user, system administrator, and developer documentation | [docs.ubports.com](https://docs.ubports.com) |
+| **Lomiri UI Toolkit Guide** | API reference for QML components, units.gu scaling, and widgets | [Lomiri UI Components API](https://docs.ubports.com/en/latest/appdev/ui/index.html) |
+| **Clickable Developer Manual** | Complete documentation for Clickable build system, Docker containers, and publishing | [clickable-ut.dev](https://clickable-ut.dev) |
+| **OpenStore Developer Portal** | App submission requirements, policies, manifest schema, and review criteria | [docs.open-store.io](https://docs.open-store.io) |
+| **Halium Project Documentation** | Android hardware adaptation layer, kernel guidelines, and device bringup | [halium.org](https://halium.org) |
+| **Lomiri Human Interface Guidelines** | Official design manual for edge swipes, touch metrics, typography, and Suru aesthetics | [Lomiri HIG Manual](https://docs.ubports.com/en/latest/appdev/design/index.html) |
+| **AppArmor Security Policy Groups** | Reference list of security permissions (location, camera, microphone, networking) | [AppArmor Policy Groups](https://docs.ubports.com/en/latest/appdev/security/policygroups.html) |
+| **Content Hub API Reference** | Inter-application file transfer, import, export, and share handler specifications | [Content Hub API](https://docs.ubports.com/en/latest/appdev/apis/content-hub.html) |
+| **URL Dispatcher Specification** | URI scheme registration, deep links, and system intent invocation | [URL Dispatcher Docs](https://docs.ubports.com/en/latest/appdev/apis/url-dispatcher.html) |
+| **Qt 5.15 Quick Reference** | Upstream Qt Company declarative QML engine reference manual | [Qt 5.15 Documentation](https://doc.qt.io/qt-5/qtquick-index.html) |
+| **Qt 6.x Quick Reference** | Next-generation Qt 6 declarative reference and RHI graphics architecture | [Qt 6 Documentation](https://doc.qt.io/qt-6/qtquick-index.html) |
+`
+        },
+        {
+          id: "core-git-repos",
+          title: "Source Code Repositories & Build Systems",
+          content: `
+### Upstream Code Repositories
+
+| Subsystem | Description | Source Repository |
+|---|---|---|
+| **UBports Main GitLab** | The primary software organization hosting all operating system code | [gitlab.com/ubports](https://gitlab.com/ubports) |
+| **Lomiri Shell** | The core convergent user interface, edge manager, and compositor frontend | [lomiri](https://gitlab.com/ubports/development/core/lomiri) |
+| **Lomiri UI Toolkit** | The QML component library defining buttons, headers, and adaptive layouts | [lomiri-ui-toolkit](https://gitlab.com/ubports/development/core/lomiri-ui-toolkit) |
+| **Mir Display Server** | Canonical and community Wayland display compositor engine | [canonical/mir](https://github.com/canonical/mir) |
+| **Clickable CLI** | The standard containerized command-line compiler and build system | [clickable](https://github.com/Open-Store-Team/clickable) |
+| **Halium Project** | Android hardware adaptation layer shared across mobile Linux distributions | [github.com/Halium](https://github.com/Halium) |
+| **check-kernel-config** | Kernel configuration validation script for mobile Linux bringup | [check-kernel-config](https://github.com/Halium/check-kernel-config) |
+| **libhybris** | Dynamic linker translation bridge wrapping Android Bionic blobs for glibc | [libhybris/libhybris](https://github.com/libhybris/libhybris) |
+| **Waydroid** | LXC-based container engine running Android applications on native Linux | [waydroid/waydroid](https://github.com/waydroid/waydroid) |
+| **UBports Installer** | Cross-platform desktop GUI installer for flashing devices | [ubports-installer](https://github.com/ubports/ubports-installer) |
+
+#### Core System Applications Source Code:
+* **Morph Web Browser**: [morph-browser](https://gitlab.com/ubports/development/core/morph-browser) (Chromium-based QtWebEngine mobile browser)
+* **Lomiri Dialer**: [dialer-app](https://gitlab.com/ubports/development/core/dialer-app) (Telephony call management interface)
+* **Lomiri Messaging**: [messaging-app](https://gitlab.com/ubports/development/core/messaging-app) (SMS and MMS messaging client)
+* **Lomiri Terminal**: [lomiri-terminal-app](https://gitlab.com/ubports/development/core/lomiri-terminal-app) (Hardware terminal emulator with touch keyboard)
+* **Lomiri Camera**: [camera-app](https://gitlab.com/ubports/development/core/camera-app) (Photo and video capture interface)
+* **Lomiri File Manager**: [lomiri-filemanager-app](https://gitlab.com/ubports/development/core/lomiri-filemanager-app) (Sandboxed and root file browser)
+`
+        },
+        {
+          id: "app-stores-registries",
+          title: "Application Distribution & OpenStore Services",
+          content: `
+### Software Distribution Infrastructure
+
+| Service | Description | Direct Link |
+|---|---|---|
+| **OpenStore Web Catalog** | The official community app store catalog for Ubuntu Touch applications | [open-store.io](https://open-store.io) |
+| **OpenStore Backend API** | Go and Node.js REST API servicing app discovery, reviews, and package downloads | [openstore-api](https://github.com/Open-Store-Team/openstore-api) |
+| **OpenStore Web Frontend** | Responsive web client interface for the OpenStore platform | [openstore-web](https://github.com/Open-Store-Team/openstore-web) |
+| **OpenStore CLI** | Command line tool for uploading, reviewing, and managing Click packages | [openstore-cli](https://github.com/Open-Store-Team/openstore-cli) |
+| **Clickable Templates** | Official boilerplate templates for QML, C++, Rust, Go, and Python | [Clickable App Templates](https://github.com/Open-Store-Team/clickable/tree/master/clickable/templates) |
+| **Debian Lomiri Tracker** | Upstream Debian package maintenance status for Lomiri desktop packages | [Debian Package Tracker](https://tracker.debian.org/pkg/lomiri) |
+`
+        },
+        {
+          id: "community-portals",
+          title: "Community Channels, Forums & Development Groups",
+          content: `
+### Community Communication Channels
+
+| Platform | Channel / URL | Purpose |
+|---|---|---|
+| **UBports Community Forum** | [forum.ubports.com](https://forum.ubports.com) | Discussion forums, device support, user troubleshooting, announcements |
+| **Telegram Main Supergroup** | [t.me/ubports](https://t.me/ubports) | General community discussion and newcomer support |
+| **Telegram Developers Group** | [t.me/ubports_dev](https://t.me/ubports_dev) | Active engineering discussions, app development, porting assistance |
+| **Matrix Community Space** | [#ubports:matrix.org](https://matrix.to/#/#ubports:matrix.org) | Bridged open-source chat rooms for privacy and decentralized discussion |
+| **UBports YouTube Channel** | [youtube.com/@UBports](https://www.youtube.com/@UBports) | Bi-weekly community livestreams, Q&A sessions, state-of-the-OS updates |
+| **Ubuntu Touch Subreddit** | [reddit.com/r/Ubports](https://www.reddit.com/r/Ubports) | Community questions, hardware photos, project releases |
+| **Fediverse / Mastodon** | [@ubports on Fosstodon](https://fosstodon.org/@ubports) | Decentralized official social announcements |
+| **Ubuntu Discourse** | [discourse.ubuntu.com/c/ubuntu-touch/10](https://discourse.ubuntu.com/c/ubuntu-touch/10) | Canonical and community discussions on Ubuntu Touch |
+`
+        },
+        {
+          id: "device-porting-hardware",
+          title: "Device Porting Portals & Hardware Trackers",
+          content: `
+### Hardware Porting & Compatibility Databases
+
+| Database / Resource | Purpose | Direct Link |
+|---|---|---|
+| **Ubuntu Touch Devices Database** | The comprehensive registry of all supported devices, porting progress, and release channels | [devices.ubuntu-touch.io](https://devices.ubuntu-touch.io) |
+| **Halium Device Porting Matrix** | Cross-distribution device porting tracker for Halium targets | [halium.org/devices](https://halium.org/devices) |
+| **postmarketOS Device Wiki** | Cross-reference hardware database for Linux kernel mainline drivers and modem bringup | [wiki.postmarketos.org](https://wiki.postmarketos.org/wiki/Devices) |
+| **Volla Phone Portal** | Hardware manufacturer offering native, out-of-the-box Ubuntu Touch devices | [volla.online](https://volla.online) |
+| **Pine64 PinePhone Wiki** | Open-hardware smartphone documentation and developer guides | [wiki.pine64.org](https://wiki.pine64.org/wiki/PinePhone) |
+| **Fairphone Community Forum** | Sustainable smartphone porting initiatives for Fairphone 4 and 5 | [forum.fairphone.com](https://forum.fairphone.com) |
+`
+        }
+      ]
+    },
+    {
+      id: "module-8-classroom",
+      number: "11",
       title: "Instructor Kit, Syllabus & Quizzes",
       summary: "Course syllabus for university/bootcamp classes, lecture slide outlines, interactive quizzes with explanations, and grading rubrics.",
       readTime: "20 min read",
